@@ -92,7 +92,7 @@ log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
 
 ## 映射文件
 
-- sqlmap/User.xml
+- sqlmap/Accounts.xml
 
 ```xml
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -114,8 +114,8 @@ log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
 
      resultType：指定sql输出结果的映射的java对象类型，select指定resultType表示将单条记录映射成java对象
      -->
-    <select id="findUserById" parameterType="int" resultType="com.iot.mybatis.po.User">
-        SELECT * FROM  user  WHERE id=#{value}
+    <select id="findUserById" parameterType="int" resultType="com.iot.mybatis.po.Accounts">
+        SELECT * FROM  Accounts  WHERE ID=#{value}
     </select>
 
     <!-- 根据用户名称模糊查询用户信息，可能返回多条
@@ -124,90 +124,96 @@ log4j.appender.stdout.layout.ConversionPattern=%5p [%t] - %m%n
 	使用${}拼接sql，引起 sql注入
 	${value}：接收输入参数的内容，如果传入类型是简单类型，${}中只能使用value
 	 -->
-    <select id="findUserByName" parameterType="java.lang.String" resultType="com.iot.mybatis.po.User">
-        SELECT * FROM user WHERE username LIKE '%${value}%'
+    <select id="findUserByName" parameterType="java.lang.String" resultType="com.iot.mybatis.po.Accounts">
+        SELECT * FROM Accounts WHERE Nickname LIKE '%${value}%'
     </select>
-
-
 </mapper>
 ```
 
 
 
 
-在sqlMapConfig.xml中加载User.xml
+在sqlMapConfig.xml中加载Accounts.xml
 
 ```xml
-<!-- 加载映射文件-->
-<mappers>
-    <mapper resource="sqlmap/User.xml"/>
-</mappers>
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+        PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-config.dtd">
+<configuration>
+    <!-- 和spring整合后 environments配置将废除-->
+    <environments default="development">
+        <environment id="development">
+            <!-- 使用jdbc事务管理，事务控制由mybatis-->
+            <transactionManager type="JDBC" />
+            <!-- 数据库连接池,由mybatis管理-->
+            <dataSource type="POOLED">
+                <property name="driver" value="com.mysql.jdbc.Driver" />
+                <property name="url" value="jdbc:mysql://rm-bp1dt9mpug49w8c45jo.mysql.rds.aliyuncs.com/test_db?Port=3306&amp;useSSL=false" />
+                <property name="username" value="app" />
+                <property name="password" value="App@2176109" />
+            </dataSource>
+        </environment>
+    </environments>
+    <!-- 加载映射文件-->
+    <mappers>
+        <mapper resource="sqlmap/Accounts.xml"/>
+    </mappers>
+</configuration>
 ```
 
 ## 程序代码
 
-- po类`User.java`
+- po类`Accounts.java`
 
 ```java
 package com.iot.mybatis.po;
-
 import java.util.Date;
 
-/**
- * Created by Administrator on 2016/2/21.
- */
-public class User {
+public class Accounts {
     //属性名要和数据库表的字段对应
-    private int id;
-    private String username;// 用户姓名
-    private String sex;// 性别
-    private Date birthday;// 生日
-    private String address;// 地址
+    private int ID;
+    private String Nickname;// 用户姓名
+    private Date CreateTime;// 生日
+    private String Email;// 地址
 
-    public int getId() {
-        return id;
+    public int getID() {
+        return ID;
     }
 
-    public void setId(int id) {
-        this.id = id;
+    public void setID(int ID) {
+        this.ID = ID;
     }
 
-    public String getUsername() {
-        return username;
+    public String getNickname() {
+        return Nickname;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setNickname(String Nickname) {
+        this.Nickname = Nickname;
     }
 
-    public String getSex() {
-        return sex;
+
+    public Date getCreateTime() {
+        return CreateTime;
     }
 
-    public void setSex(String sex) {
-        this.sex = sex;
+    public void setCreateTime(Date CreateTime) {
+        this.CreateTime = CreateTime;
     }
 
-    public Date getBirthday() {
-        return birthday;
+    public String getEmail() {
+        return Email;
     }
 
-    public void setBirthday(Date birthday) {
-        this.birthday = birthday;
-    }
-
-    public String getAddress() {
-        return address;
-    }
-
-    public void setAddress(String address) {
-        this.address = address;
+    public void setEmail(String Email) {
+        this.Email = Email;
     }
 
     @Override
     public String toString() {
-        return "User [id=" + id + ", username=" + username + ", sex=" + sex
-                + ", birthday=" + birthday + ", address=" + address + "]";
+        return "Accounts [ID=" + ID + ", Nickname=" + Nickname + ", CreateTime="
+                + CreateTime + ", Email=" + Email + "]";
     }
 }
 
@@ -217,75 +223,63 @@ public class User {
 - 测试代码
 
 ```java
-package com.iot.mybatis.first;
+package com.iot.mybatis.po;
 
-import com.iot.mybatis.po.User;
 import org.apache.ibatis.io.Resources;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-/**
- * Created by Administrator on 2016/2/23.
- */
-public class MybatisFirst {
+public class Main {
 
-    //根据id查询用户信息，得到一条记录结果
+    public static void main(String[] args) throws IOException {
+        System.out.println("Hello World!");
+        findUserByIdTest();
 
-    @Test
-    public void findUserByIdTest() throws IOException{
+        findUserByNameTest();
+    }
+
+    public static void findUserByIdTest() throws IOException {
         // mybatis配置文件
         String resource = "SqlMapConfig.xml";
         // 得到配置文件流
         InputStream inputStream =  Resources.getResourceAsStream(resource);
         //创建会话工厂，传入mybatis配置文件的信息
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
-
         // 通过工厂得到SqlSession
         SqlSession sqlSession = sqlSessionFactory.openSession();
-
         // 通过SqlSession操作数据库
         // 第一个参数：映射文件中statement的id，等于=namespace+"."+statement的id
         // 第二个参数：指定和映射文件中所匹配的parameterType类型的参数
         // sqlSession.selectOne结果 是与映射文件中所匹配的resultType类型的对象
         // selectOne查询出一条记录
-        User user = sqlSession.selectOne("test.findUserById", 1);
-
+        Accounts user = sqlSession.selectOne("test.findUserById", 1);
         System.out.println(user);
-
         // 释放资源
         sqlSession.close();
-
     }
 
-    // 根据用户名称模糊查询用户列表
-    @Test
-    public void findUserByNameTest() throws IOException {
+    public static void findUserByNameTest() throws IOException {
         // mybatis配置文件
         String resource = "SqlMapConfig.xml";
         // 得到配置文件流
         InputStream inputStream = Resources.getResourceAsStream(resource);
-
         // 创建会话工厂，传入mybatis的配置文件信息
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder()
                 .build(inputStream);
-
         // 通过工厂得到SqlSession
         SqlSession sqlSession = sqlSessionFactory.openSession();
         // list中的user和映射文件中resultType所指定的类型一致
-        List<User> list = sqlSession.selectList("test.findUserByName", "小明");
+        List<Accounts> list = sqlSession.selectList("test.findUserByName", "管理员");
         System.out.println(list);
         sqlSession.close();
-
     }
-
-
 }
+
 ```
 
 
@@ -294,41 +288,40 @@ public class MybatisFirst {
 - `findUserByIdTest()`
 
 ```
+C:\Java\jdk1.8.0_171\bin\java "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2018.1\lib\idea_rt.jar=56153:C:\Program Files\JetBrains\IntelliJ IDEA 2018.1\bin" -Dfile.encoding=UTF-8 -classpath C:\Java\jdk1.8.0_171\jre\lib\charsets.jar;C:\Java\jdk1.8.0_171\jre\lib\deploy.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\access-bridge-64.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\cldrdata.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\dnsns.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\jaccess.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\jfxrt.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\localedata.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\nashorn.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunec.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunjce_provider.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunmscapi.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunpkcs11.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\zipfs.jar;C:\Java\jdk1.8.0_171\jre\lib\javaws.jar;C:\Java\jdk1.8.0_171\jre\lib\jce.jar;C:\Java\jdk1.8.0_171\jre\lib\jfr.jar;C:\Java\jdk1.8.0_171\jre\lib\jfxswt.jar;C:\Java\jdk1.8.0_171\jre\lib\jsse.jar;C:\Java\jdk1.8.0_171\jre\lib\management-agent.jar;C:\Java\jdk1.8.0_171\jre\lib\plugin.jar;C:\Java\jdk1.8.0_171\jre\lib\resources.jar;C:\Java\jdk1.8.0_171\jre\lib\rt.jar;C:\java_code\mybatis01\out\production\mybatis01;C:\java_code\mybatis01\lib\asm-3.3.1.jar;C:\java_code\mybatis01\lib\cglib-2.2.2.jar;C:\java_code\mybatis01\lib\commons-logging-1.1.1.jar;C:\java_code\mybatis01\lib\javassist-3.17.1-GA.jar;C:\java_code\mybatis01\lib\log4j-api-2.6.3-CUSTOM.jar;C:\java_code\mybatis01\lib\log4j-core-2.6.3-CUSTOM.jar;C:\java_code\mybatis01\lib\log4j-1.2.17.jar;C:\java_code\mybatis01\lib\mysql-connector-java-5.1.34_1.jar;C:\java_code\mybatis01\lib\org.apache.felix.ipojo.annotations-1.12.1.jar;C:\java_code\mybatis01\lib\abstract-jdbc-driver-0.5.jar;C:\java_code\mybatis01\lib\mybatis-3.2.7.jar;C:\java_code\mybatis01\lib\slf4j-api-1.7.5.jar;C:\java_code\mybatis01\lib\slf4j-log4j12-1.7.5.jar com.iot.mybatis.po.Main
+Hello World!
 DEBUG [main] - Logging initialized using 'class org.apache.ibatis.logging.slf4j.Slf4jImpl' adapter.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - Opening JDBC Connection
-DEBUG [main] - Created connection 1857815974.
-DEBUG [main] - Setting autocommit to false on JDBC Connection [com.mysql.jdbc.JDBC4Connection@6ebc05a6]
-DEBUG [main] - ==>  Preparing: SELECT * FROM user WHERE id=? 
+DEBUG [main] - Created connection 876563773.
+DEBUG [main] - Setting autocommit to false on JDBC Connection [com.mysql.jdbc.JDBC4Connection@343f4d3d]
+DEBUG [main] - ==>  Preparing: SELECT * FROM Accounts WHERE ID=? 
 DEBUG [main] - ==> Parameters: 1(Integer)
 DEBUG [main] - <==      Total: 1
-User [id=1, username=王五, sex=2, birthday=null, address=null]
-DEBUG [main] - Resetting autocommit to true on JDBC Connection [com.mysql.jdbc.JDBC4Connection@6ebc05a6]
-DEBUG [main] - Closing JDBC Connection [com.mysql.jdbc.JDBC4Connection@6ebc05a6]
-DEBUG [main] - Returned connection 1857815974 to pool.
-```
-
-- `findUserByNameTest()`
-
-```
-DEBUG [main] - Logging initialized using 'class org.apache.ibatis.logging.slf4j.Slf4jImpl' adapter.
+Accounts [ID=1, Nickname=管理员, CreateTime=Wed May 31 10:02:23 CST 2017, Email=]
+DEBUG [main] - Resetting autocommit to true on JDBC Connection [com.mysql.jdbc.JDBC4Connection@343f4d3d]
+DEBUG [main] - Closing JDBC Connection [com.mysql.jdbc.JDBC4Connection@343f4d3d]
+DEBUG [main] - Returned connection 876563773 to pool.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - PooledDataSource forcefully closed/removed all connections.
 DEBUG [main] - Opening JDBC Connection
-DEBUG [main] - Created connection 1596467899.
-DEBUG [main] - Setting autocommit to false on JDBC Connection [com.mysql.jdbc.JDBC4Connection@5f282abb]
-DEBUG [main] - ==>  Preparing: SELECT * FROM user WHERE username LIKE '%小明%' 
+DEBUG [main] - Created connection 1376400422.
+DEBUG [main] - Setting autocommit to false on JDBC Connection [com.mysql.jdbc.JDBC4Connection@520a3426]
+DEBUG [main] - ==>  Preparing: SELECT * FROM Accounts WHERE Nickname LIKE '%管理员%' 
 DEBUG [main] - ==> Parameters: 
-DEBUG [main] - <==      Total: 3
-[User [id=16, username=张小明, sex=1, birthday=null, address=河南郑州], User [id=22, username=陈小明, sex=1, birthday=null, address=河南郑州], User [id=25, username=陈小明, sex=1, birthday=null, address=河南郑州]]
-DEBUG [main] - Resetting autocommit to true on JDBC Connection [com.mysql.jdbc.JDBC4Connection@5f282abb]
-DEBUG [main] - Closing JDBC Connection [com.mysql.jdbc.JDBC4Connection@5f282abb]
-DEBUG [main] - Returned connection 1596467899 to pool.
+DEBUG [main] - <==      Total: 15
+[Accounts [ID=1, Nickname=管理员, CreateTime=Wed May 31 10:02:23 CST 2017, Email=], Accounts [ID=15, Nickname=管理员, CreateTime=Thu Aug 10 08:41:25 CST 2017, Email=], Accounts [ID=16, Nickname=管理员, CreateTime=Fri Aug 11 10:59:00 CST 2017, Email=], Accounts [ID=17, Nickname=管理员, CreateTime=Fri Aug 11 10:59:45 CST 2017, Email=], Accounts [ID=24, Nickname=鲁滨管理员, CreateTime=Thu Aug 24 12:46:32 CST 2017, Email=], Accounts [ID=25, Nickname=熠点管理员, CreateTime=Fri Aug 25 17:40:13 CST 2017, Email=], Accounts [ID=26, Nickname=芙蓉管理员, CreateTime=Mon Aug 28 16:21:06 CST 2017, Email=], Accounts [ID=30, Nickname=管理员, CreateTime=Fri Sep 01 15:52:13 CST 2017, Email=], Accounts [ID=32, Nickname=世纪缘管理员, CreateTime=Tue Sep 05 18:09:01 CST 2017, Email=], Accounts [ID=37, Nickname=管理员, CreateTime=Mon Sep 11 10:41:51 CST 2017, Email=], Accounts [ID=38, Nickname=蓝盒子管理员, CreateTime=Wed Sep 13 09:26:04 CST 2017, Email=], Accounts [ID=50, Nickname=管理员, CreateTime=Tue Sep 19 11:39:56 CST 2017, Email=], Accounts [ID=154, Nickname=城阳周大生管理员, CreateTime=Wed Oct 25 11:33:31 CST 2017, Email=], Accounts [ID=174, Nickname=澳德乐管理员, CreateTime=Mon Oct 30 09:41:13 CST 2017, Email=], Accounts [ID=308, Nickname=万福管理员, CreateTime=Fri Jan 12 22:16:15 CST 2018, Email=]]
+DEBUG [main] - Resetting autocommit to true on JDBC Connection [com.mysql.jdbc.JDBC4Connection@520a3426]
+DEBUG [main] - Closing JDBC Connection [com.mysql.jdbc.JDBC4Connection@520a3426]
+DEBUG [main] - Returned connection 1376400422 to pool.
+
+Process finished with exit code 0
+
 ```
 
 
