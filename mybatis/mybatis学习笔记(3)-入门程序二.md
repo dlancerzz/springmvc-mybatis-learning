@@ -27,14 +27,40 @@
 
 ## 映射文件
 
- - User.xml,在入门程序一基础上增加
+ - User.xml,在入门程序一基础上增加(增删改)
 
 ```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- namespace 命名空间，作用就是对sql进行分类化管理,理解为sql隔离
+ 注意：使用mapper代理方法开发，namespace有特殊重要的作用
+ -->
+<mapper namespace="test">
+    <!-- 在映射文件中配置很多sql语句 -->
+    <!--需求:通过id查询用户表的记录 -->
+    <!-- 通过select执行数据库查询
+     id:标识映射文件中的sql，称为statement的id
+     将sql语句封装到mappedStatement对象中，所以将id称为statement的id
+     parameterType:指定输入参数的类型
+     #{}标示一个占位符,
+     #{value}其中value表示接收输入参数的名称，如果输入参数是简单类型，那么#{}中的值可以任意。
+     resultType：指定sql输出结果的映射的java对象类型，select指定resultType表示将单条记录映射成java对象
+     -->
+    <select id="findUserById" parameterType="String" resultType="com.iot.mybatis.po.User">
+        SELECT * FROM  user  WHERE id=#{value}
+    </select>
+    <!-- 根据用户名称模糊查询用户信息，可能返回多条
+	resultType：指定就是单条记录所映射的java对象类型
+	${}:表示拼接sql串，将接收到参数的内容不加任何修饰拼接在sql中。
+	使用${}拼接sql，引起 sql注入
+	${value}：接收输入参数的内容，如果传入类型是简单类型，${}中只能使用value
+	 -->
+    <select id="findUserByName" parameterType="java.lang.String" resultType="com.iot.mybatis.po.User">
+        SELECT * FROM user WHERE username LIKE '%${value}%'
+    </select>
 
-    <!-- 添加用户
-        parameterType：指定输入 参数类型是pojo（包括 用户信息）
-        #{}中指定pojo的属性名，接收到pojo对象的属性值，mybatis通过OGNL获取对象的属性值
-        -->
     <insert id="insertUser" parameterType="com.iot.mybatis.po.User">
         <!--
          将插入数据的主键返回，返回到user对象中
@@ -44,28 +70,29 @@
          keyProperty：将查询到主键值设置到parameterType指定的对象的哪个属性
          order：SELECT LAST_INSERT_ID()执行顺序，相对于insert语句来说它的执行顺序
          resultType：指定SELECT LAST_INSERT_ID()的结果类型
-          -->
+
         <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
-          SELECT LAST_INSERT_ID()
+            SELECT LAST_INSERT_ID()
         </selectKey>
         INSERT INTO user (username,birthday,sex,address)values (#{username},#{birthday},#{sex},#{address})
+        -->
         <!--
             使用mysql的uuid（）生成主键
             执行过程：
             首先通过uuid()得到主键，将主键设置到user对象的id属性中
             其次在insert执行时，从user对象中取出id属性值
              -->
-        <!--  <selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String">
+        <selectKey keyProperty="id" order="BEFORE" resultType="java.lang.String">
             SELECT uuid()
         </selectKey>
-        insert into user(id,username,birthday,sex,address) value(#{id},#{username},#{birthday},#{sex},#{address}) -->
+        insert into user(id,username,birthday,sex,address) value(#{id},#{username},#{birthday},#{sex},#{address})
 
     </insert>
 
     <!-- 删除 用户
         根据id删除用户，需要输入 id值
          -->
-    <delete id="deleteUser" parameterType="java.lang.Integer">
+    <delete id="deleteUser" parameterType="java.lang.String">
         delete from user where id=#{id}
     </delete>
 
@@ -80,7 +107,7 @@
         update user set username=#{username},birthday=#{birthday},sex=#{sex},address=#{address}
         where id=#{id}
     </update>
-
+</mapper>
 ```
 
 
@@ -96,9 +123,128 @@
 - User.java,在入门程序一基础上增加三个测试方法
 
 ```java
-  // 添加用户信息
-    @Test
-    public void insertUserTest() throws IOException {
+ package com.iot.mybatis.po;
+
+import java.util.Date;
+
+/**
+ * Created by Administrator on 2016/2/21.
+ */
+public class User {
+    //属性名要和数据库表的字段对应
+    private String id;
+    private String username;// 用户姓名
+    private String sex;// 性别
+    private Date birthday;// 生日
+    private String address;// 地址
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
+    }
+
+    public Date getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(Date birthday) {
+        this.birthday = birthday;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    @Override
+    public String toString() {
+        return "User [id=" + id + ", username=" + username + ", sex=" + sex
+                + ", birthday=" + birthday + ", address=" + address + "]";
+    }
+}
+```
+
+Main.java
+
+```java
+package com.iot.mybatis.po;
+
+import org.apache.ibatis.io.Resources;
+import org.apache.ibatis.session.SqlSession;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Date;
+
+public class Main {
+
+    public static void main(String[] args) throws IOException {
+        System.out.println("Hello World!");
+        User user = new User();
+        user.setUsername("王大军");
+        user.setBirthday(new Date());
+        user.setSex("1");
+        user.setAddress("河南郑州");
+        insertUser(user);
+
+        user = new User();
+        user.setUsername("王二军");
+        user.setBirthday(new Date());
+        user.setSex("1");
+        user.setAddress("河南郑州");
+        insertUser(user);
+
+        user = new User();
+        user.setUsername("王小军");
+        user.setBirthday(new Date());
+        user.setSex("2");
+        user.setAddress("河南郑州");
+        insertUser(user);
+
+        List<User> users =  findUserByName("王");
+
+        System.out.println(users);
+
+        user = users.get(0);
+
+        user.setAddress("湖南长沙");
+
+        updateUser(user);
+
+       User ussechage=  findUserById(user.getId());
+        System.out.println(ussechage);
+        for (User u:users
+             ) {
+         deleteUser(u.getId());
+        }
+    }
+
+    public static void insertUser(User user) throws IOException {
         // mybatis配置文件
         String resource = "SqlMapConfig.xml";
         // 得到配置文件流
@@ -111,14 +257,8 @@
         // 通过工厂得到SqlSession
         SqlSession sqlSession = sqlSessionFactory.openSession();
         // 插入用户对象
-        User user = new User();
-        user.setUsername("王小军");
-        user.setBirthday(new Date());
-        user.setSex("1");
-        user.setAddress("河南郑州");
 
         sqlSession.insert("test.insertUser", user);
-
         // 提交事务
         sqlSession.commit();
 
@@ -129,9 +269,7 @@
 
     }
 
-    // 根据id删除 用户信息
-    @Test
-    public void deleteUserTest() throws IOException {
+    public static void deleteUser(String id) throws IOException {
         // mybatis配置文件
         String resource = "SqlMapConfig.xml";
         // 得到配置文件流
@@ -145,7 +283,7 @@
         SqlSession sqlSession = sqlSessionFactory.openSession();
 
         // 传入id删除 用户
-        sqlSession.delete("test.deleteUser", 29);
+        sqlSession.delete("test.deleteUser", id);
 
         // 提交事务
         sqlSession.commit();
@@ -155,9 +293,7 @@
 
     }
 
-    // 更新用户信息
-    @Test
-    public void updateUserTest() throws IOException {
+    public static void updateUser(User user) throws IOException {
         // mybatis配置文件
         String resource = "SqlMapConfig.xml";
         // 得到配置文件流
@@ -171,14 +307,6 @@
         SqlSession sqlSession = sqlSessionFactory.openSession();
         // 更新用户信息
 
-        User user = new User();
-        //必须设置id
-        user.setId(27);
-        user.setUsername("王大军");
-        user.setBirthday(new Date());
-        user.setSex("2");
-        user.setAddress("河南郑州");
-
         sqlSession.update("test.updateUser", user);
 
         // 提交事务
@@ -188,6 +316,45 @@
         sqlSession.close();
 
     }
+
+    public static User findUserById(String id) throws IOException {
+        // mybatis配置文件
+        String resource = "SqlMapConfig.xml";
+        // 得到配置文件流
+        InputStream inputStream =  Resources.getResourceAsStream(resource);
+        //创建会话工厂，传入mybatis配置文件的信息
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
+        // 通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        // 通过SqlSession操作数据库
+        // 第一个参数：映射文件中statement的id，等于=namespace+"."+statement的id
+        // 第二个参数：指定和映射文件中所匹配的parameterType类型的参数
+        // sqlSession.selectOne结果 是与映射文件中所匹配的resultType类型的对象
+        // selectOne查询出一条记录
+        User user = sqlSession.selectOne("test.findUserById", id);
+        // 释放资源
+        sqlSession.close();
+        return user;
+    }
+
+    public static List<User> findUserByName(String name) throws IOException {
+        // mybatis配置文件
+        String resource = "SqlMapConfig.xml";
+        // 得到配置文件流
+        InputStream inputStream = Resources.getResourceAsStream(resource);
+        // 创建会话工厂，传入mybatis的配置文件信息
+        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder()
+                .build(inputStream);
+        // 通过工厂得到SqlSession
+        SqlSession sqlSession = sqlSessionFactory.openSession();
+        // list中的user和映射文件中resultType所指定的类型一致
+        List<User> list = sqlSession.selectList("test.findUserByName", name);
+
+        sqlSession.close();
+
+        return list;
+    }
+}
 
 ```
 
