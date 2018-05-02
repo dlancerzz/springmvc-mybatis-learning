@@ -285,8 +285,6 @@ public class Main {
 
 输出：
 
-- `findUserByIdTest()`
-
 ```
 C:\Java\jdk1.8.0_171\bin\java "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2018.1\lib\idea_rt.jar=56153:C:\Program Files\JetBrains\IntelliJ IDEA 2018.1\bin" -Dfile.encoding=UTF-8 -classpath C:\Java\jdk1.8.0_171\jre\lib\charsets.jar;C:\Java\jdk1.8.0_171\jre\lib\deploy.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\access-bridge-64.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\cldrdata.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\dnsns.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\jaccess.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\jfxrt.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\localedata.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\nashorn.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunec.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunjce_provider.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunmscapi.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\sunpkcs11.jar;C:\Java\jdk1.8.0_171\jre\lib\ext\zipfs.jar;C:\Java\jdk1.8.0_171\jre\lib\javaws.jar;C:\Java\jdk1.8.0_171\jre\lib\jce.jar;C:\Java\jdk1.8.0_171\jre\lib\jfr.jar;C:\Java\jdk1.8.0_171\jre\lib\jfxswt.jar;C:\Java\jdk1.8.0_171\jre\lib\jsse.jar;C:\Java\jdk1.8.0_171\jre\lib\management-agent.jar;C:\Java\jdk1.8.0_171\jre\lib\plugin.jar;C:\Java\jdk1.8.0_171\jre\lib\resources.jar;C:\Java\jdk1.8.0_171\jre\lib\rt.jar;C:\java_code\mybatis01\out\production\mybatis01;C:\java_code\mybatis01\lib\asm-3.3.1.jar;C:\java_code\mybatis01\lib\cglib-2.2.2.jar;C:\java_code\mybatis01\lib\commons-logging-1.1.1.jar;C:\java_code\mybatis01\lib\javassist-3.17.1-GA.jar;C:\java_code\mybatis01\lib\log4j-api-2.6.3-CUSTOM.jar;C:\java_code\mybatis01\lib\log4j-core-2.6.3-CUSTOM.jar;C:\java_code\mybatis01\lib\log4j-1.2.17.jar;C:\java_code\mybatis01\lib\mysql-connector-java-5.1.34_1.jar;C:\java_code\mybatis01\lib\org.apache.felix.ipojo.annotations-1.12.1.jar;C:\java_code\mybatis01\lib\abstract-jdbc-driver-0.5.jar;C:\java_code\mybatis01\lib\mybatis-3.2.7.jar;C:\java_code\mybatis01\lib\slf4j-api-1.7.5.jar;C:\java_code\mybatis01\lib\slf4j-log4j12-1.7.5.jar com.iot.mybatis.po.Main
 Hello World!
@@ -324,7 +322,19 @@ Process finished with exit code 0
 
 ```
 
+## 
 
+```
+Hello World!
+Exception in thread "main" java.io.IOException: Could not find resource SqlMapConfig.xml
+	at org.apache.ibatis.io.Resources.getResourceAsStream(Resources.java:110)
+	at org.apache.ibatis.io.Resources.getResourceAsStream(Resources.java:97)
+	at com.iot.mybatis.po.Main.findUserByIdTest(Main.java:25)
+	at com.iot.mybatis.po.Main.main(Main.java:16)
+
+Process finished with exit code 1
+```
+如果你的输出是这样，你需要将`config`目录作为资源的根节点（Mark Directory as Resources Root）。
 
 
 ## 总结
